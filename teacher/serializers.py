@@ -5,6 +5,7 @@ from school.models import School
 import datetime
 from fcm_django.models import FCMDevice
 from firebase_admin.messaging import Message, Notification
+from dateutil.relativedelta import relativedelta
 
 class SchoolSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="course.name", required=False)
@@ -268,23 +269,25 @@ class CourseRegistrationSerializer(serializers.Serializer):
         try: 
             student = Student.objects.get(user__uuid=student_id)
             teacher = Teacher.objects.get(user__id=user_id)
-            print(course_id)
             course = Course.objects.get(uuid=course_id)
             attrs['student'] = student
             attrs['teacher'] = teacher
             attrs['course'] = course
         except Student.DoesNotExist:
             raise serializers.ValidationError({
-                'user_id': 'User not found'
+                'student_id': 'Student not found'
             })
         except Teacher.DoesNotExist:
             raise serializers.ValidationError({
-                'teacher_code': 'Teacher not found'
+                'user_id': 'User not found'
             })
         except Course.DoesNotExist:
             raise serializers.ValidationError({
                 'course_code': 'Course not found'
             })
+        attrs['registered_date'] = datetime.date.today()
+        if not course.no_exp:
+            attrs['exp_date'] = attrs['registered_date'] + relativedelta(months=course.exp_range)
         return attrs
 
 class ListLessonSerializer(serializers.ModelSerializer):

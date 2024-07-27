@@ -233,10 +233,6 @@ class RegistrationViewset(ViewSet):
         filters = {
             'teacher__user_id': request.user.id,
         }
-        if request.data.get("all_course"):
-            filters['completed'] = True
-        else:
-            filters['completed'] = False
         student_uuid = request.GET.get("student_uuid")
         if student_uuid:
             # Assuming you have a Teacher model with a UUID field

@@ -9,18 +9,27 @@ import string
 # Create your models here.
 
 class CourseRegistration(models.Model):
-    registered_date = models.DateField(auto_now_add=True)
-    finised_date = models.DateField(null=True, blank=True)
-    course = models.ForeignKey(to=Course, on_delete=models.PROTECT, related_name="registration")
-    student = models.ForeignKey(to="Student", on_delete=models.CASCADE, related_name="registration")
-    finished = models.BooleanField(default=False)
+    STATUS_CHOICES = [
+        ('PEN', 'Pending'),
+        ('COM', 'Completed'),
+        ('EXP', 'Expired'),
+    ]
     uuid = models.UUIDField(default=uuid4, editable=False, unique=True)
+
+    registered_date = models.DateField(auto_now_add=True)
+    exp_date = models.DateField(null=True)
+    finised_date = models.DateField(null=True, blank=True)
+
+    status = models.CharField(choices=STATUS_CHOICES, max_length=3, default="PEN")
+    used_lessons = models.IntegerField(default=0)
+
     student_favorite = models.BooleanField(default=False)
     teacher_favorite = models.BooleanField(default=False)
-    teacher = models.ForeignKey(Teacher, on_delete=models.PROTECT)
-    used_lessons = models.IntegerField(default=0)
-    completed = models.BooleanField(default=False)
 
+    teacher = models.ForeignKey(Teacher, on_delete=models.PROTECT)
+    course = models.ForeignKey(to=Course, on_delete=models.PROTECT, related_name="registration")
+    student = models.ForeignKey(to="Student", on_delete=models.CASCADE, related_name="registration")
+    
     def __str__(self) -> str:
         return f"{self.student.__str__()} {self.course.__str__()} {self.teacher.__str__()}"
 

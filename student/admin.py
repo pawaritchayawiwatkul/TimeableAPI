@@ -16,4 +16,4 @@ class LessonAdmin(admin.ModelAdmin):
 class CourseRegistrationAdmin(admin.ModelAdmin):
     list_display = ('registered_date', 'course', 'student', 'teacher', 'used_lessons')
     search_fields = ( 'course', 'student', 'teacher',)
-    list_filter = ('course', 'student', 'teacher', 'completed')
+    list_filter = ('course', 'student', 'teacher', 'status')

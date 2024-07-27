@@ -90,10 +90,6 @@ class CourseViewset(ViewSet):
         filters = {
             'student__user_id': request.user.id,
         }
-        if request.data.get("all_course"):
-            filters['completed'] = True
-        else:
-            filters['completed'] = False
 
         if teacher_uuid:
             # Assuming you have a Teacher model with a UUID field
