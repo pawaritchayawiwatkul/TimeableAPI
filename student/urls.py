@@ -28,6 +28,10 @@ lessonDayView = views.LessonViewset.as_view({
     'get': 'day',
 })
 
+lessonWeekView = views.LessonViewset.as_view({
+    'get': 'week',
+})
+
 lessonRecentView = views.LessonViewset.as_view({
     'get': 'recent',
 })
@@ -70,7 +74,8 @@ urlpatterns = format_suffix_patterns([
     path('lesson/', lessonView, name='lesson'),
     path('lesson/status/<slug:status>', lessonStatusView, name='lesson'),
     path('lesson/day', lessonDayView, name='lesson-day'),
-    path('lesson/recent', lessonRecentView, name='lesson-day'),
+    path('lesson/week', lessonWeekView, name='lesson-week'),
+    path('lesson/recent', lessonRecentView, name='lesson-recent'),
     path('lesson/<slug:code>/cancel', lessonCancelView, name='course-detail'),
 
     path('teacher/', teacherListView, name='lesson-day'),

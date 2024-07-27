@@ -15,7 +15,7 @@ from rest_framework.viewsets import ViewSet
 from django.db.models import Prefetch
 from utils import merge_schedule
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db.models import Count, F, Func, Value, CharField, Prefetch
 from fcm_django.models import FCMDevice
 from firebase_admin.messaging import Message, Notification
@@ -337,6 +337,24 @@ class LessonViewset(ViewSet):
         lessons = Lesson.objects.select_related("registration__student__user", "registration__course").filter(**filters).order_by("booked_datetime")
         ser = ListLessonSerializer(instance=lessons, many=True)
         return Response(ser.data, status=200)
+    
+    def week(self, request):
+        date = request.GET.get('date', None)
+        if not date:
+            return Response(status=400)
+        date = datetime.strptime(date, '%Y-%m-%d')
+        sw = date - timedelta(days=date.weekday())
+        value = {}
+        lessons = Lesson.objects.select_related("registration__student__user").filter(
+                registration__teacher__user_id=request.user.id,
+                booked_datetime__range=[sw, sw + timedelta(days=6)]
+            ).order_by("booked_datetime")
+        for i in range(6):
+            filtlessons = [lesson for lesson in lessons if lesson.booked_datetime.date() == sw.date()]
+            ser = ListLessonSerializer(instance=filtlessons, many=True)        
+            value[sw.strftime('%Y-%m-%d')] = ser.data
+            sw += timedelta(days=1)
+        return Response(value)
     
     def day(self, request):
         date = request.GET.get('date', None)
