@@ -55,7 +55,6 @@ class Lesson(models.Model):
         ('CON', 'Confirmed'),
         ('COM', 'Completed'),
         ('CAN', 'Canceled'),
-        ('FIN', 'Finished'),
         ('MIS', 'Missed'),
     ]
 

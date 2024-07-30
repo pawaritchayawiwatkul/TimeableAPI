@@ -2,7 +2,14 @@ from rest_framework import serializers
 from teacher.models import UnavailableTimeOneTime
 import random
 import string
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
+import pathlib
+from uuid import uuid4
+import boto3
 
+    
 def generate_unique_code(length=8):
     """Generate a unique random code."""
     characters = string.ascii_letters + string.digits
@@ -60,3 +67,4 @@ def split_at_reg(rblock, otblock):
         return blocks
     else:
         return [gen_query_otblock(otblock), ]
+    

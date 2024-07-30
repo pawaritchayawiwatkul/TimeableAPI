@@ -260,7 +260,7 @@ class LessonViewset(ViewSet):
                 message = Message(
                     notification=Notification(
                         title=f"{lesson.registration.course.name} Lesson Canceled!",
-                        body=f'Your lesson with {request.user.name} has been canceled. We apologize for any inconvenience.'
+                        body=f'Your lesson with {request.user.first_name} has been canceled. We apologize for any inconvenience.'
                     ),
                 ),
             )

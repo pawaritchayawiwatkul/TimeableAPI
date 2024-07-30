@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 class SchoolSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="course.name", required=False)
-    description = serializers.CharField(source="course.short_description", required=False)
+    description = serializers.CharField(source="course.description", required=False)
     start = serializers.TimeField(required=False)
     stop = serializers.TimeField(required=False)
 
@@ -75,7 +75,7 @@ class OnetimeUnavailableSerializer(serializers.ModelSerializer):
 
 class TeacherCourseListSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="course.name")
-    description = serializers.CharField(source="course.short_description")
+    description = serializers.CharField(source="course.description")
     uuid = serializers.CharField(source="course.uuid")
 
 
@@ -131,7 +131,6 @@ class ListStudentDirectSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
     description = serializers.CharField(max_length=300)
-    short_description = serializers.CharField(max_length=300)
     no_exp = serializers.BooleanField(default=True)
     exp_range = serializers.IntegerField(required=False)
     duration = serializers.IntegerField()
@@ -204,6 +203,28 @@ class ProfileSerializer(serializers.ModelSerializer):
             instance.user.save()
             return instance
     
+class SchoolSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(required=False)
+    description = serializers.CharField(required=False)
+    registered_date = serializers.DateField(read_only=True)
+    start = serializers.TimeField(required=False)
+    stop = serializers.TimeField(required=False)
+    # is_teacher = serializers.CharField(source="user.is_teacher", read_only=False)
+
+    class Meta:
+        model = Teacher
+        fields = ("name", "description", "registered_date", "start", "stop")
+
+    # def update(self, instance, validated_data):
+    #     user_data = validated_data.get('user')
+    #     if user_data:
+    #         instance.user.name = user_data.get('name', instance.name)
+    #         instance.user.description = user_data.get('description', instance.description)
+    #         instance.user.start = user_data.get('start', instance.start)
+    #         instance.user.stop =  user_data.get('stop', instance.stop)
+    #         instance.user.save()
+    #         return instance
+
 class ListLessonDateTimeSerializer(serializers.ModelSerializer):
     duration = serializers.IntegerField(source="registration.course.duration")
     

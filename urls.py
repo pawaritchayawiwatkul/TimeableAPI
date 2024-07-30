@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from django.urls import path, include
 import djoser
-import settings
+import settings as settings
 from django.conf.urls.static import static
 from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
 

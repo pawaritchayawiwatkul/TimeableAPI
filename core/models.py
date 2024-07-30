@@ -34,13 +34,21 @@ class CustomUserManager(BaseUserManager):
         
         return self.create_user(email, password, **extra_fields)
     
+def file_generate_upload_path(instance, filename):
+	# Both filename and instance.file_name should have the same values
+    return f"profile_image/{instance.uuid}"
+
 class User(AbstractBaseUser, PermissionsMixin):
     email = EmailField(unique=True)
     first_name = CharField(max_length=255)
     last_name = CharField(max_length=255)
     phone_number = CharField(max_length=10)
     password = CharField(max_length=255)
-    profile_image = CharField(max_length=255)
+    profile_image = models.FileField(
+        upload_to=file_generate_upload_path,
+        blank=True,
+        null=True
+    )
     uuid = UUIDField(default=uuid.uuid4, editable=False, unique=True)
     is_teacher = BooleanField(default=True)
     is_admin = BooleanField(default=False)

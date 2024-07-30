@@ -23,6 +23,8 @@ from google.auth import load_credentials_from_file
 import os
 # importing necessary functions from dotenv library
 from dotenv import load_dotenv, dotenv_values 
+import crontab
+
 # loading variables from .env file
 load_dotenv() 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'fcm_django',
+    'django_crontab',
 
     'debug_toolbar',
     'teacher',
@@ -105,28 +108,28 @@ WSGI_APPLICATION = 'wsgi.application'
 #      }
 #     }
 
-# DATABASES = {
-#     'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'postgres',
-#        'USER': 'postgres',
-#        'PASSWORD': 'Pluem9988!',
-#        'HOST': 'localhost',
-#        'PORT': '5432',
-#     }
-# }
-
-
 DATABASES = {
     'default': {
-       'ENGINE': 'django.db.backends.postgresql_psycopg2',
-       'NAME': 'railway',
-       'HOST': 'monorail.proxy.rlwy.net',
+       'ENGINE': 'django.db.backends.postgresql',
+       'NAME': 'postgres',
        'USER': 'postgres',
-       'PASSWORD': 'AyDEBNsgiiBOdoNURGIMeqnIEzaNAVdm',
-       'PORT': '15052',
+       'PASSWORD': 'Pluem9988!',
+       'HOST': 'localhost',
+       'PORT': '5432',
     }
 }
+
+
+# DATABASES = {
+#     'default': {
+#        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#        'NAME': 'railway',
+#        'HOST': 'monorail.proxy.rlwy.net',
+#        'USER': 'postgres',
+#        'PASSWORD': 'AyDEBNsgiiBOdoNURGIMeqnIEzaNAVdm',
+#        'PORT': '15052',
+#     }
+# }
 
 
 # [END gaeflex_py_django_database_config]
@@ -268,3 +271,9 @@ FCM_DJANGO_SETTINGS = {
      # default: False
     "DELETE_INACTIVE_DEVICES": False,
 }
+
+
+CRONJOBS = [
+    ('* * * * *', 'tasks.twenty_seconds'),
+    # Add more cron jobs as needed
+]

@@ -23,7 +23,6 @@ class School(models.Model):
     
 class Course(models.Model):
     name = models.CharField(max_length=100)
-    short_description  = models.CharField(max_length=100)
     description = models.CharField(max_length=300)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False)
     no_exp = models.BooleanField()

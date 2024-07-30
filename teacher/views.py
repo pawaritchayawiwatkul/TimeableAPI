@@ -19,6 +19,9 @@ from datetime import datetime, timedelta
 from django.db.models import Count, F, Func, Value, CharField, Prefetch
 from fcm_django.models import FCMDevice
 from firebase_admin.messaging import Message, Notification
+import boto3
+from botocore.exceptions import ClientError
+import os
 
 @permission_classes([IsAuthenticated])
 class UnavailableTimeViewset(ViewSet):
@@ -127,14 +130,39 @@ class ProfileViewSet(ViewSet):
         else:
             return Response(ser.errors, status=400)
     
-    def update_institute(self, request):
+    def update_profile(self, request):
+        user = request.user
+        filename = f"/profile_image/{request.user.uuid}"
+        imagedata = request.FILES['profile_image']
+        user.profile_image = filename
+        # Upload the file
+        s3 = boto3.resource('s3')
+        try:
+            object = s3.Object('bucket sauce', filename)
+            object.put(ACL='public-read',Body=imagedata,Key=filename)
+            return True
+        except Exception as e:
+            return e
+        
+@permission_classes([IsAuthenticated])
+class SchoolViewSet(ViewSet):
+    def retrieve(self, request):
+        user = request.user
+        try:
+            teacher = Teacher.objects.select_related("school").get(user_id=user.id)
+            ser = SchoolSerializer(instance=teacher.school)
+            return Response(ser.data)
+        except Teacher.DoesNotExist:
+            return Response(status=404)
+        
+    def update(self, request):
         ser = SchoolSerializer(data=request.data)
         try:
-            school = Teacher.objects.select_related("school").get(user_id=request.user.id).school
+            teacher = Teacher.objects.select_related("school").get(user_id=request.user.id).school
         except:
             return Response(status=404)
         if ser.is_valid():
-            student = ser.update(school, ser.validated_data)
+            school = ser.update(teacher, ser.validated_data)
             return Response(ser.data, status=200)
         else: 
             return Response(ser.errors, status=400)
@@ -284,7 +312,7 @@ class LessonViewset(ViewSet):
                 message = Message(
                     notification=Notification(
                         title=f"{lesson.registration.course.name} Lesson Canceled!",
-                        body=f'Your lesson with {request.user.name} has been canceled. We apologize for any inconvenience.'
+                        body=f'Your lesson with {request.user.first_name} has been canceled. We apologize for any inconvenience.'
                     ),
                 ),
             )
@@ -304,13 +332,63 @@ class LessonViewset(ViewSet):
                 message =Message(
                     notification=Notification(
                         title=f"{lesson.registration.course.name} Lesson Confirmed!",
-                        body=f'Your lesson with {request.user.name} on [Date] at [Time] has been confirmed. Get ready to learn and excel!'
+                        body=f'Your lesson with {request.user.first_name} on [Date] at [Time] has been confirmed. Get ready to learn and excel!'
                     ),
                 ),
             )
         
         return Response({'success': 'Lesson confirmed successfully.'}, status=200)
     
+    def attended(self, request, code):
+        try:
+            lesson = Lesson.objects.select_related("registration__course", "registration__student").get(code=code, registration__teacher__user__id=request.user.id, status="CON")
+        except Lesson.DoesNotExist:
+            return Response({'failed': "No Lesson matches the given query."}, status=200)
+    
+        if lesson.booked_datetime >= timezone.now():
+            return Response({'failed': "Has Not passed Booked Datetime."}, status=200)
+        
+        lesson.status = 'COM'
+        lesson.save()
+        lesson.registration.used_lessons += 1
+        lesson.registration.save()
+
+        devices = FCMDevice.objects.filter(user=lesson.registration.student.user_id)
+        devices.send_message(
+                message =Message(
+                    notification=Notification(
+                        title=f"{lesson.registration.course.name} Lesson Attended!",
+                        body=f'Your lesson with {request.user.first_name} on [Date] at [Time] has been attended.'
+                    ),
+                ),
+            )
+        
+        return Response({'success': 'Lesson attended successfully.'}, status=200)
+    
+    def missed(self, request, code):
+        try:
+            lesson = Lesson.objects.select_related("registration__course", "registration__student").get(code=code, registration__teacher__user__id=request.user.id, status="CON")
+        except Lesson.DoesNotExist:
+            return Response({'failed': "No Lesson matches the given query."}, status=200)
+    
+        if lesson.booked_datetime >= timezone.now():
+            return Response({'failed': "Has Not passed Booked Datetime."}, status=200)
+
+        lesson.status = 'MIS'
+        lesson.save()
+
+        devices = FCMDevice.objects.filter(user=lesson.registration.student.user_id)
+        devices.send_message(
+                message =Message(
+                    notification=Notification(
+                        title=f"{lesson.registration.course.name} Lesson Missed!",
+                        body=f'Your missed a lesson with {request.user.first_name} on [Date] at [Time].'
+                    ),
+                ),
+            )
+        
+        return Response({'success': 'Lesson marked as missed.'}, status=200)
+        
     def status(self, request, status):
         filters = {
             "registration__teacher__user_id": request.user.id
@@ -332,7 +410,6 @@ class LessonViewset(ViewSet):
         }
         registration_uuid = request.GET.get("registration_uuid")
         if registration_uuid:
-            # Assuming you have a Teacher model with a UUID field
             filters['registration__uuid'] = registration_uuid
         lessons = Lesson.objects.select_related("registration__student__user", "registration__course").filter(**filters).order_by("booked_datetime")
         ser = ListLessonSerializer(instance=lessons, many=True)
@@ -376,3 +453,4 @@ class LessonViewset(ViewSet):
             return Response({"booked_date": obj.booked_datetime}, status=200)
         else:
             return Response(ser.errors, status=400)
+        

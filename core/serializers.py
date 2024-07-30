@@ -23,11 +23,13 @@ ALL_FIELDS = '__all__'
 class UserCreateSerializer(BaseUserCreateSerializer):
     school_name = serializers.CharField(required=False)
     school_description = serializers.CharField(required=False)
+    school_start = serializers.TimeField(required=False)
+    school_stop = serializers.TimeField(required=False)
     uuid = serializers.CharField(required=False)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = ['password', 'email', 'first_name', 'last_name', 'is_teacher', 'phone_number', "school_name", "uuid", "school_description", "profile_image"]
-        non_native_fields = ["school_name", "school_description",]
+        fields = ['password', 'email', 'first_name', 'last_name', 'is_teacher', 'phone_number', "school_name", "uuid", "school_description", "profile_image", "school_start", "school_stop"]
+        non_native_fields = ["school_name", "school_description", "school_start", "school_stop"]
 
     def to_native(self, obj):
         """
@@ -52,16 +54,30 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         validated_data.pop("uuid", None)
         school_name = validated_data.pop("school_name", None)
         school_desc = validated_data.pop("school_description", None)
+        school_start = validated_data.pop("school_start", None)
+        school_stop = validated_data.pop("school_stop", None)
         try:
             user = self.perform_create(validated_data)
         except IntegrityError:
             self.fail("cannot_create_user")
         if user.is_teacher:
             if not school_name or not school_desc:
-                self.fail("please_provide_school_info") 
+                user.delete()
+                raise serializers.ValidationError(
+                    {"school_info": "please provide name and description"}
+                )
+                # self.fail("please_provide_school_info") 
+            if not school_start or not school_stop:
+                user.delete()
+                raise serializers.ValidationError(
+                    {"operating_info": "please provide start and stop"}
+                )
+                # self.fail("please_provide_schoo            
             school = School.objects.create(
                 name=school_name,
-                description=school_desc
+                description=school_desc,
+                start=school_start,
+                stop=school_stop
             )
             Teacher.objects.create(
                 user_id=user.id,
