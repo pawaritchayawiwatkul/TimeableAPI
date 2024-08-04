@@ -113,36 +113,19 @@ class ProfileViewSet(ViewSet):
     def retrieve(self, request):
         user = request.user
         try:
-            teacher = Teacher.objects.select_related("user").get(user_id=user.id)
-            ser = ProfileSerializer(instance=teacher)
+            ser = ProfileSerializer(instance=user)
             return Response(ser.data)
         except Teacher.DoesNotExist:
             return Response(status=404)
     
     def update(self, request):
         user = request.user
-        student = Teacher.objects.select_related("user").get(user_id=user.id)
         ser = ProfileSerializer(data=request.data)
         if ser.is_valid():
-            print(ser.validated_data)
-            student = ser.update(student, ser.validated_data)
+            user = ser.update(user, ser.validated_data)
             return Response(status=200)
         else:
             return Response(ser.errors, status=400)
-    
-    def update_profile(self, request):
-        user = request.user
-        filename = f"/profile_image/{request.user.uuid}"
-        imagedata = request.FILES['profile_image']
-        user.profile_image = filename
-        # Upload the file
-        s3 = boto3.resource('s3')
-        try:
-            object = s3.Object('bucket sauce', filename)
-            object.put(ACL='public-read',Body=imagedata,Key=filename)
-            return True
-        except Exception as e:
-            return e
         
 @permission_classes([IsAuthenticated])
 class SchoolViewSet(ViewSet):
@@ -170,13 +153,13 @@ class SchoolViewSet(ViewSet):
 
 @permission_classes([IsAuthenticated])
 class StudentViewset(ViewSet):
-    def add(self, request, student_uuid):
-        student = get_object_or_404(Student, user__uuid=student_uuid)
+    def add(self, request, code):
+        student = get_object_or_404(Student, user__uuid=code)
         user = request.user
         teacher = get_object_or_404(Teacher, user_id=user.id)
-        if not teacher.teacher.filter(id=student.id).exists():
-            teacher.teacher.add(student)
-            teacher.school.add(student.school_id)
+        if not student.teacher.filter(id=student.id).exists():
+            student.teacher.add(teacher)
+            student.school.add(teacher.school_id)
         return Response(status=200)
     
     def list(self, request):

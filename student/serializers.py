@@ -2,17 +2,19 @@ from rest_framework import serializers
 from student.models import Lesson, CourseRegistration, Student, StudentTeacherRelation
 from teacher.models import Teacher
 from school.models import Course
-    
+from core.models import User
+
 class ListTeacherSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="teacher.user.first_name")
     uuid = serializers.CharField(source="teacher.user.uuid")
     email = serializers.CharField(source="teacher.user.email")
     phone_number = serializers.CharField(source="teacher.user.phone_number")
     school_name = serializers.CharField(source="teacher.school.name")
+    profile_image = serializers.FileField(source="teacher.user.profile_image")
 
     class Meta:
         model = StudentTeacherRelation
-        fields = ("name", "school_name", "email", "phone_number", "uuid", "favorite_teacher")
+        fields = ("name", "school_name", "email", "phone_number", "uuid", "favorite_teacher", "profile_image")
 
 class ListCourseRegistrationSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="course.name")
@@ -103,28 +105,12 @@ class LessonSerializer(serializers.Serializer):
         return attrs
 
 class ProfileSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source="user.first_name", required=False)
-    last_name = serializers.CharField(source="user.last_name", required=False)
-    phone_number = serializers.CharField(source="user.phone_number", required=False)
-    uuid = serializers.CharField(source="user.uuid", required=False)
-    email = serializers.CharField(source="user.email", required=False)
-    # is_teacher = serializers.CharField(source="user.is_teacher", read_only=False)
-
-    class Meta:
-        model = Student
-        fields = ("first_name", "last_name", "phone_number", "email", "uuid")
+    uuid = serializers.UUIDField(read_only=True)
     
-    def update(self, instance, validated_data):
-        user_data = validated_data.get('user')
-        if user_data:
-            instance.user.first_name = user_data.get('first_name', instance.user.first_name)
-            instance.user.last_name = user_data.get('last_name', instance.user.last_name)
-            instance.user.phone_number = user_data.get('phone_number', instance.user.phone_number)
-            instance.user.email = user_data.get('email', instance.user.email)
-            instance.user.username = f'{instance.user.first_name} {instance.user.last_name}'
-            instance.user.save()
-            return instance
-        
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "phone_number", "email", "uuid", "profile_image")
+    
 class UnavailableTimeSerializer(serializers.Serializer):
     start = serializers.TimeField()
     stop = serializers.TimeField()

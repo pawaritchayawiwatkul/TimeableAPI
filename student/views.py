@@ -25,26 +25,23 @@ class ProfileViewSet(ViewSet):
     def retrieve(self, request):
         try:
             user = request.user
-            student = Student.objects.select_related("user").get(user_id=user.id)
-            ser = ProfileSerializer(instance=student)
+            ser = ProfileSerializer(instance=user)
             return Response(ser.data)
         except Student.DoesNotExist:
             return Response(status=404)
     
     def update(self, request):
         user = request.user
-        student = Student.objects.select_related("user").get(user_id=user.id)
         ser = ProfileSerializer(data=request.data)
         if ser.is_valid():
-            print(ser.validated_data)
-            student = ser.update(student, ser.validated_data)
+            user = ser.update(user, ser.validated_data)
             return Response(status=200)
         else:
             return Response(ser.errors, status=400)
         
     def add(self, request, teacher_uuid):
-        teacher = get_object_or_404(Teacher, user__uuid=teacher_uuid)
         user = request.user
+        teacher = get_object_or_404(Teacher, user__uuid=teacher_uuid)
         student = get_object_or_404(Student, user_id=user.id)
         if not student.teacher.filter(id=teacher.id).exists():
             student.teacher.add(teacher)

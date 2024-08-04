@@ -39,11 +39,11 @@ def file_generate_upload_path(instance, filename):
     return f"profile_image/{instance.uuid}"
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = EmailField(unique=True)
-    first_name = CharField(max_length=255)
-    last_name = CharField(max_length=255)
-    phone_number = CharField(max_length=10)
-    password = CharField(max_length=255)
+    email = EmailField(unique=True, blank=True)
+    first_name = CharField(max_length=255, blank=True)
+    last_name = CharField(max_length=255, blank=True)
+    phone_number = CharField(max_length=10, blank=True)
+    password = CharField(max_length=255, blank=True)
     profile_image = models.FileField(
         upload_to=file_generate_upload_path,
         blank=True,

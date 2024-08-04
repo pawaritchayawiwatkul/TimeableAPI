@@ -2,6 +2,7 @@ from rest_framework import serializers
 from teacher.models import Course, Teacher, TeacherCourses, UnavailableTimeOneTime, UnavailableTimeRegular
 from student.models import StudentTeacherRelation, CourseRegistration, Lesson, Student
 from school.models import School
+from core.models import User
 import datetime
 from fcm_django.models import FCMDevice
 from firebase_admin.messaging import Message, Notification
@@ -93,7 +94,7 @@ class TeacherCourseDetailwithStudentSerializer(serializers.ModelSerializer):
 
     def get_students(self, obj):
         students = obj.course._prefetched_objects_cache['registration'].values_list('student').distinct()
-        return ListStudentDirectSerializer(StudentTeacherRelation.objects.select_related("student__user").filter(student_id__in=students, teacher_id=obj.teacher_id), many=True).data
+        return ListStudentSerializer(StudentTeacherRelation.objects.select_related("student__user").filter(student_id__in=students, teacher_id=obj.teacher_id), many=True).data
     
     class Meta:
         model = TeacherCourses
@@ -117,16 +118,6 @@ class UnavailableTimeSerializer(serializers.Serializer):
 
     class Meta:
         fields = ("start", "stop")
-
-class ListStudentDirectSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="student.user.first_name")
-    phone_number = serializers.CharField(source="student.user.phone_number")
-    email = serializers.CharField(source="student.user.email")
-    uuid = serializers.CharField(source="student.user.uuid")
-
-    class Meta:
-        model = StudentTeacherRelation
-        fields = ("name", "phone_number", "email", "uuid", "favorite_student")
 
 class CourseSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
@@ -167,10 +158,11 @@ class ListStudentSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(source="student.user.phone_number")
     email = serializers.CharField(source="student.user.email")
     uuid = serializers.CharField(source="student.user.uuid")
+    profile_image = serializers.FileField(source="student.user.profile_image")
 
     class Meta:
         model = StudentTeacherRelation
-        fields = ("name", "phone_number", "email", "uuid", "favorite_student")
+        fields = ("name", "phone_number", "email", "uuid", "favorite_student", "profile_image")
 
 class ListCourseRegistrationSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="course.name")
@@ -178,30 +170,14 @@ class ListCourseRegistrationSerializer(serializers.ModelSerializer):
     number_of_lessons = serializers.IntegerField(source="course.number_of_lessons")
     class Meta:
         model = CourseRegistration
-        fields = ("name", "description", "used_lessons", "number_of_lessons", "teacher_favorite", "uuid")
+        fields = ("name", "description", "used_lessons", "number_of_lessons", "teacher_favorite", "uuid", "exp_date")
 
 class ProfileSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source="user.first_name", required=False)
-    last_name = serializers.CharField(source="user.last_name", required=False)
-    phone_number = serializers.CharField(source="user.phone_number", required=False)
-    uuid = serializers.CharField(source="user.uuid", required=False)
-    email = serializers.CharField(source="user.email", required=False)
-    # is_teacher = serializers.CharField(source="user.is_teacher", read_only=False)
-
+    uuid = serializers.UUIDField(read_only=True)
+    
     class Meta:
-        model = Teacher
-        fields = ("first_name", "last_name", "phone_number", "email", "uuid")
-
-    def update(self, instance, validated_data):
-        user_data = validated_data.get('user')
-        if user_data:
-            instance.user.first_name = user_data.get('first_name', instance.user.first_name)
-            instance.user.last_name = user_data.get('last_name', instance.user.last_name)
-            instance.user.phone_number = user_data.get('phone_number', instance.user.phone_number)
-            instance.user.email = user_data.get('email', instance.user.email)
-            instance.user.username = f'{instance.user.first_name} {instance.user.last_name}'
-            instance.user.save()
-            return instance
+        model = User
+        fields = ("first_name", "last_name", "phone_number", "email", "uuid", "profile_image")
     
 class SchoolSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
@@ -214,16 +190,6 @@ class SchoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = ("name", "description", "registered_date", "start", "stop")
-
-    # def update(self, instance, validated_data):
-    #     user_data = validated_data.get('user')
-    #     if user_data:
-    #         instance.user.name = user_data.get('name', instance.name)
-    #         instance.user.description = user_data.get('description', instance.description)
-    #         instance.user.start = user_data.get('start', instance.start)
-    #         instance.user.stop =  user_data.get('stop', instance.stop)
-    #         instance.user.save()
-    #         return instance
 
 class ListLessonDateTimeSerializer(serializers.ModelSerializer):
     duration = serializers.IntegerField(source="registration.course.duration")
@@ -247,10 +213,6 @@ class LessonSerializer(serializers.Serializer):
         try: 
             course = CourseRegistration.objects.get(uuid=registration_id, teacher__user_id=user_id)
             attrs['registration_id'] = course.id
-        except Student.DoesNotExist:
-            raise serializers.ValidationError({
-                'teacher_id': 'User not found'
-            })
         except CourseRegistration.DoesNotExist:
             raise serializers.ValidationError({
                 'registration_id': 'Teacher not found'
