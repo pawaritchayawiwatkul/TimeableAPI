@@ -22,7 +22,7 @@ class ListCourseRegistrationSerializer(serializers.ModelSerializer):
     number_of_lessons = serializers.IntegerField(source="course.number_of_lessons")
     class Meta:
         model = CourseRegistration
-        fields = ("name", "description", "used_lessons", "number_of_lessons", "student_favorite", "uuid")
+        fields = ("name", "description", "used_lessons", "number_of_lessons", "student_favorite", "uuid", "exp_date")
 
 class ListLessonDateTimeSerializer(serializers.ModelSerializer):
     duration = serializers.IntegerField(source="registration.course.duration")
