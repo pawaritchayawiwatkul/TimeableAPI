@@ -109,7 +109,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ("first_name", "last_name", "phone_number", "email", "uuid", "profile_image")
+        fields = ("first_name", "last_name", "phone_number", "email", "uuid", "profile_image", "is_teacher")
     
 class UnavailableTimeSerializer(serializers.Serializer):
     start = serializers.TimeField()
