@@ -110,6 +110,9 @@ regularUnavailable = views.UnavailableTimeViewset.as_view({
     'post': 'regular'
 })
 
+blockTimeList = views.BlockTimeViewset.as_view({
+    'get': 'retrieve'
+})
 # Enter URL path below
 urlpatterns = format_suffix_patterns([
     path('profile/', profileView, name='profile'),
@@ -141,4 +144,5 @@ urlpatterns = format_suffix_patterns([
     path('student', studentListView, name='student-list'),
     path('student/<slug:code>/favorite', studentFavView, name='student-fav'),
     path('student/<slug:code>/add', studentAddView, name='student-add'),
-])
+    
+    path('block/', blockTimeList, name='block-time')])

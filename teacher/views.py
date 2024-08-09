@@ -437,3 +437,32 @@ class LessonViewset(ViewSet):
         else:
             return Response(ser.errors, status=400)
         
+class BlockTimeViewset(ViewSet):
+    def retrieve(self, request):
+        date = request.GET.get("date", None)
+        if not date:
+            return Response(status=400)
+        date = datetime.strptime(date, '%Y-%m-%d')
+        day_number = date.weekday() + 1
+        teacher = Teacher.objects.prefetch_related(
+            Prefetch(
+                "unavailable_reg",
+                queryset=UnavailableTimeRegular.objects.filter(
+                    day=str(day_number)
+                ).only("start", "stop"),
+                to_attr="regular"
+            ),
+            Prefetch(
+                "unavailable_once",
+                queryset=UnavailableTimeOneTime.objects.filter(
+                    date=date
+                ).only("start", "stop"),
+                to_attr="once"
+            ),
+        ).get(user__id=request.user.id)
+
+        unavailable_regular = UnavailableTimeSerializer(teacher.regular, many=True).data
+        unavailable_times = UnavailableTimeSerializer(teacher.once, many=True).data
+        return Response(data={
+            "unavailable": list(unavailable_regular) + list(unavailable_times),
+        })
