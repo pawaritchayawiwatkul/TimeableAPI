@@ -218,9 +218,17 @@ class LessonViewset(ViewSet):
         date = request.GET.get('date', None)
         if not date:
             return Response(status=400)
+        status = request.GET.get('status', None)
+        filters = {
+            "registration__student__user_id": request.user.id,
+            "booked_datetime__date": date,
+            }
+        if status == "pending":
+            filters['status'] = "PEN"
+        elif status == "confirm":
+            filters['status'] = "CON"
         lessons = Lesson.objects.select_related("registration__teacher__user", "registration__course").filter(
-            registration__student__user_id=request.user.id,
-            booked_datetime__date=date,
+            **filters
         ).order_by("booked_datetime")
         ser = ListLessonSerializer(instance=lessons, many=True)
         return Response(ser.data)

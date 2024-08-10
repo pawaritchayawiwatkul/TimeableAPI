@@ -58,6 +58,46 @@ class UnavailableTimeViewset(ViewSet):
             else:
                 return Response(ser.errors, status=400)
         return Response(status=200)
+
+    def retrieve(self, request):
+        date = request.GET.get("date", None)
+        if not date:
+            return Response(status=400)
+        date = datetime.strptime(date, '%Y-%m-%d')
+        day_number = date.weekday() + 1
+        teacher = Teacher.objects.prefetch_related(
+            Prefetch(
+                "unavailable_reg",
+                queryset=UnavailableTimeRegular.objects.filter(
+                    day=str(day_number)
+                ).only("start", "stop"),
+                to_attr="regular"
+            ),
+            Prefetch(
+                "unavailable_once",
+                queryset=UnavailableTimeOneTime.objects.filter(
+                    date=date
+                ).only("start", "stop"),
+                to_attr="once"
+            ),
+        ).get(user__id=request.user.id)
+
+        unavailable_regular = UnavailableTimeSerializer(teacher.regular, many=True).data
+        unavailable_times = UnavailableTimeSerializer(teacher.once, many=True).data
+        return Response(data={
+            "unavailable": list(unavailable_regular) + list(unavailable_times),
+        })
+
+    def remove(self, request, code):
+        try:
+            UnavailableTimeRegular.objects.get(code=code, teacher__user_id=request.user.id)
+        except UnavailableTimeRegular.DoesNotExist:
+            try:
+                UnavailableTimeOneTime.objects.get(code=code, teacher__user_id=request.user.id)
+            except UnavailableTimeOneTime.DoesNotExist:
+                return Response(status=400)
+
+        return Response()
     
 @permission_classes([IsAuthenticated])
 class CourseViewset(ViewSet):
@@ -420,9 +460,17 @@ class LessonViewset(ViewSet):
         date = request.GET.get('date', None)
         if not date:
             return Response(status=400)
+        status = request.GET.get('status', None)
+        filters = {
+            "registration__teacher__user_id": request.user.id,
+            "booked_datetime__date": date,
+            }
+        if status == "pending":
+            filters['status'] = "PEN"
+        elif status == "confirm":
+            filters['status'] = "CON"
         lessons = Lesson.objects.select_related("registration__student__user").filter(
-            registration__teacher__user_id=request.user.id,
-            booked_datetime__date=date,
+            **filters
         ).order_by("booked_datetime")
         ser = ListLessonSerializer(instance=lessons, many=True)
         return Response(ser.data)
@@ -437,32 +485,3 @@ class LessonViewset(ViewSet):
         else:
             return Response(ser.errors, status=400)
         
-class BlockTimeViewset(ViewSet):
-    def retrieve(self, request):
-        date = request.GET.get("date", None)
-        if not date:
-            return Response(status=400)
-        date = datetime.strptime(date, '%Y-%m-%d')
-        day_number = date.weekday() + 1
-        teacher = Teacher.objects.prefetch_related(
-            Prefetch(
-                "unavailable_reg",
-                queryset=UnavailableTimeRegular.objects.filter(
-                    day=str(day_number)
-                ).only("start", "stop"),
-                to_attr="regular"
-            ),
-            Prefetch(
-                "unavailable_once",
-                queryset=UnavailableTimeOneTime.objects.filter(
-                    date=date
-                ).only("start", "stop"),
-                to_attr="once"
-            ),
-        ).get(user__id=request.user.id)
-
-        unavailable_regular = UnavailableTimeSerializer(teacher.regular, many=True).data
-        unavailable_times = UnavailableTimeSerializer(teacher.once, many=True).data
-        return Response(data={
-            "unavailable": list(unavailable_regular) + list(unavailable_times),
-        })

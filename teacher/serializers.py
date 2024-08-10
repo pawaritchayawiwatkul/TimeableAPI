@@ -115,9 +115,10 @@ class TeacherCourseDetailSerializer(serializers.ModelSerializer):
 class UnavailableTimeSerializer(serializers.Serializer):
     start = serializers.TimeField()
     stop = serializers.TimeField()
+    code = serializers.CharField()
 
     class Meta:
-        fields = ("start", "stop")
+        fields = ("start", "stop", "code")
 
 class CourseSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)

@@ -110,8 +110,12 @@ regularUnavailable = views.UnavailableTimeViewset.as_view({
     'post': 'regular'
 })
 
-blockTimeList = views.BlockTimeViewset.as_view({
+blockTimeList = views.UnavailableTimeViewset.as_view({
     'get': 'retrieve'
+})
+
+blockTimeRemove = views.UnavailableTimeViewset.as_view({
+    'delete': 'remove'
 })
 # Enter URL path below
 urlpatterns = format_suffix_patterns([
@@ -140,9 +144,11 @@ urlpatterns = format_suffix_patterns([
 
     path('unavailable/onetime', oneTimeUnavailable, name='unavailable-onetime'),
     path('unavailable/regular', regularUnavailable, name='unavailable-regular'),
+    path('unavailable/', blockTimeList, name='block-time'),
+    path('unavailable/<slug:code>/remove', blockTimeRemove, name='block-time'),
 
     path('student', studentListView, name='student-list'),
     path('student/<slug:code>/favorite', studentFavView, name='student-fav'),
     path('student/<slug:code>/add', studentAddView, name='student-add'),
-    
-    path('block/', blockTimeList, name='block-time')])
+
+    ])
